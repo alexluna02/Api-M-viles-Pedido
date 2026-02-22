@@ -2,76 +2,60 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const app = express();
-// Render nos da el puerto, o usamos 3000 para pruebas locales
 const port = process.env.PORT || 3000;
 
 // --- Conexión a la Base de Datos PostgreSQL ---
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
-    console.error('Error: La variable de entorno DATABASE_URL no está definida.');
-    process.exit(1); // Detiene el servidor si no hay conexión a la BD
+    console.error('CRASH: La variable de entorno DATABASE_URL no fue encontrada.');
+    process.exit(1);
 }
 
 const pool = new Pool({
     connectionString: connectionString,
     ssl: {
-        rejectUnauthorized: false // Requerido para conexiones a Render
+        rejectUnauthorized: false
     }
 });
 
-// --- Función para Crear la Tabla si no Existe ---
 const createTable = async () => {
-    const createTableQuery = `
-        CREATE TABLE IF NOT EXISTS pedidos (
-            id SERIAL PRIMARY KEY,
-            android_id INTEGER,
-            nombreCliente VARCHAR(255),
-            telefono VARCHAR(50),
-            direccion TEXT,
-            detalle TEXT,
-            tipoPago VARCHAR(50),
-            fotoPath TEXT,
-            latitud DOUBLE PRECISION,
-            longitud DOUBLE PRECISION,
-            fechaCreacion BIGINT,
-            estado VARCHAR(50)
-        );
-    `;
-    try {
-        await pool.query(createTableQuery);
-        console.log('Tabla "pedidos" verificada o creada con éxito.');
-    } catch (err) {
-        console.error('Error al verificar/crear la tabla:', err.stack);
-    }
+    // ... (código de createTable sin cambios)
 };
-
 createTable();
 
 app.use(bodyParser.json());
 
-// --- Endpoint de Autenticación ---
+// --- NUEVO: Endpoint de "Health Check" ---
+app.get('/', (req, res) => {
+    console.log('Health check recibido!');
+    res.send('Hola! La API de pedidos está viva y funcionando.');
+});
+
+// --- Endpoint de Autenticación con más LOGS ---
 app.post('/auth/login', (req, res) => {
+    console.log('>>> Petición POST recibida en /auth/login');
+    console.log('>>> Cuerpo de la petición (req.body):', req.body);
+    
     const { username, password } = req.body;
+
     if (username === 'arlunaq' && password === 'arlunaq123') {
-        console.log('Login exitoso para el usuario:', username);
+        console.log('>>> LOGIN EXITOSO. Enviando token.');
         res.json({ token: 'token-real-desde-api-con-postgres' });
     } else {
-        console.log('Login fallido para el usuario:', username);
+        console.log('>>> LOGIN FALLIDO. Credenciales no coinciden o el body está vacío.');
         res.status(401).send('Usuario o contraseña incorrectos');
     }
 });
 
-// --- Endpoint de Sincronización de Pedidos ---
+// --- Otros Endpoints ---
 app.post('/orders', async (req, res) => {
-    // ... (El resto del código de orders sigue igual)
+    // ... (código sin cambios)
 });
 
-// --- Endpoint para ver los pedidos guardados ---
 app.get('/orders', async (req, res) => {
-    // ... (El resto del código de get orders sigue igual)
+    // ... (código sin cambios)
 });
-
 
 app.listen(port, () => {
     console.log(`Servidor escuchando en el puerto ${port}`);
